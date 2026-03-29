@@ -11,6 +11,10 @@ on:
 jobs:
   run-scrapers:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scraper: [men_apparel_sub1, men_apparel_sub2]
+      fail-fast: false  # Continue running other jobs even if one fails
     
     steps:
       - name: Checkout code
@@ -29,19 +33,20 @@ jobs:
           playwright install chromium
           playwright install-deps
       
-      - name: Run scrapers
+      - name: Run ${{ matrix.scraper }} Scraper
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
-          python run_all_scrapers.py
+          echo "Starting ${{ matrix.scraper }} Pipeline..."
+          python -m ${{ matrix.scraper }}.main
       
       - name: Upload logs (if failed)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: scraper-logs
+          name: scraper-logs-${{ matrix.scraper }}
           path: |
             **/*.log
           retention-days: 7
